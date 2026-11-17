@@ -1,0 +1,27 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "sameshot"
+version = "0.1.0"
+description = "Find copies of the same photo across crops, edits, and watermarks."
+readme = "README.md"
+license = "MIT"
+authors = [{ name = "Karl Jussila" }]
+requires-python = ">=3.11"
+dependencies = [
+    "numpy",
+    "opencv-python-headless>=4.5",
+    "pillow>=10",
+    "torch>=2",
+]
+
+[project.urls]
+Repository = "https://github.com/KarlJussila/sameshot"
+
+[project.scripts]
+sameshot = "sameshot.cli:main"
+
+[dependency-groups]
+dev = ["pytest"]
