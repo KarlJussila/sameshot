@@ -124,3 +124,18 @@ def test_scan_groups_copies(tmp_path, cache):
 
 def test_cli_compare_exit_code(cache, capsys):
     assert main(['compare', str(IMAGES / 'coffee.jpg'), str(IMAGES / 'chelsea.jpg'), '--cache', str(cache)]) == 1
+
+
+def test_shrinking_a_larger_copy_keeps_pixel_alignment():
+    from sameshot.align import matched_resolution, tile_correlations
+    import cv2
+    import numpy as np
+    small = np.asarray(open_photo('astronaut'))
+    large = cv2.resize(small, (small.shape[1] * 3 // 2, small.shape[0] * 3 // 2), interpolation=cv2.INTER_LINEAR)
+    matrix = np.array([[small.shape[1] / large.shape[1], 0, .5 * (small.shape[1] / large.shape[1] - 1)],
+                       [0, small.shape[0] / large.shape[0], .5 * (small.shape[0] / large.shape[0] - 1)]])
+    other, reference, warp = matched_resolution(large, small, matrix)
+    warped = cv2.warpAffine(other, warp, small.shape[1::-1])
+    inside = np.zeros(small.shape[:2], bool)
+    inside[8:-8, 8:-8] = True
+    assert min(tile_correlations(reference, warped, inside)) >= .99

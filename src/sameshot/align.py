@@ -22,7 +22,7 @@ from PIL import Image, ImageOps
 from .store import default_cache_dir, file_hash
 
 FEATURES = 'sift2500-1400-v1'
-CHECK = 'smaller-ref-center80-tiles8x6-corr099-matched-v1'
+CHECK = 'smaller-ref-center80-tiles8x6-corr099-matched-v2'
 VERSION = f'{FEATURES}/{CHECK}'
 MAX_EDGE = 1400
 MIN_OVERLAP = .95
@@ -104,7 +104,15 @@ def matched_resolution(other, reference, matrix):
         height, width = reference.shape[:2]
         return other, cv2.resize(resize(reference, 1 / scale), (width, height), interpolation=cv2.INTER_LINEAR), matrix
     if scale < 1 / 1.05:
-        return resize(other, scale), reference, np.hstack([matrix[:, :2] / scale, matrix[:, 2:]])
+        small = resize(other, scale)
+        # Map the shrunken image's pixels back to the original's exactly, including
+        # resize's half-pixel offset; even a 0.15px error costs tiles their 0.99.
+        sx, sy = small.shape[1] / other.shape[1], small.shape[0] / other.shape[0]
+        warp = matrix.copy()
+        warp[:, 0] /= sx
+        warp[:, 1] /= sy
+        warp[:, 2] += matrix[:, :2] @ np.array([.5 / sx - .5, .5 / sy - .5])
+        return small, reference, warp
     return other, reference, matrix
 
 
